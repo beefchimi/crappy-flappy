@@ -1,4 +1,4 @@
-import { Application, Container, Text, TextStyle } from 'pixi.js';
+import { Application, Container, Text, TextStyle, Graphics } from 'pixi.js';
 import { GameScene } from '../types/game-scene';
 import { createBird, Bird } from '../entities/bird-entity';
 import { createPipe, getRandomGapY, Pipe } from '../entities/pipe-entity';
@@ -122,6 +122,19 @@ export function createGameScene(app: Application): GameScene {
   const particles = createParticleSystem();
   sceneContainer.addChild(particles.container);
 
+  // Fade-in overlay
+  const fadeOverlay = new Container();
+  const fadeRect = new Graphics();
+  fadeRect.beginFill(0x000000);
+  fadeRect.drawRect(0, 0, app.screen.width, app.screen.height);
+  fadeRect.endFill();
+  fadeRect.alpha = 1;
+  fadeOverlay.addChild(fadeRect);
+  sceneContainer.addChild(fadeOverlay);
+  let fadeTime = 0;
+  const FADE_DURATION = 0.5 * 60; // 0.5s at 60fps
+  let isFadingIn = true;
+
   function updateHighScoreDisplay() {
     highScoreText.text = `High Score: ${highScore}`;
   }
@@ -218,9 +231,26 @@ export function createGameScene(app: Application): GameScene {
       window.addEventListener('resize', handleResize);
       resetGame();
       handleResize();
+      // Fade-in setup
+      fadeRect.width = app.screen.width;
+      fadeRect.height = app.screen.height;
+      fadeRect.alpha = 1;
+      fadeTime = 0;
+      isFadingIn = true;
+      fadeOverlay.visible = true;
     },
     update(_delta: number) {
-      if (isGameOver) return;
+      // Fade-in animation
+      if (isFadingIn) {
+        fadeTime += _delta;
+        let t = Math.min(1, fadeTime / FADE_DURATION);
+        fadeRect.alpha = 1 - t;
+        if (t >= 1) {
+          isFadingIn = false;
+          fadeOverlay.visible = false;
+        }
+      }
+      if (isGameOver || isFadingIn) return;
       // Gravity
       bird.velocity += GRAVITY;
       bird.sprite.y += bird.velocity;
@@ -301,6 +331,8 @@ export function createGameScene(app: Application): GameScene {
       window.removeEventListener('keydown', onFlapEvent);
       window.removeEventListener('resize', handleResize);
       pipes = [];
+      // Clean up overlay
+      fadeOverlay.removeChildren();
     },
   };
 } 
