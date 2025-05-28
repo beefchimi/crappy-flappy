@@ -1,6 +1,6 @@
 import { Application, Container, Text, TextStyle, Graphics } from 'pixi.js';
 import { GameScene } from '../types/game-scene';
-import { createBird, Bird } from '../entities/bird-entity';
+import { createBird, Bird, updateBird } from '../entities/bird-entity';
 import { createPipe, getRandomGapY, Pipe } from '../entities/pipe-entity';
 import { playSound } from '../assets/sounds';
 import { createParticleSystem } from '../entities/particle-system';
@@ -15,6 +15,39 @@ const PIPE_GAP = 160;
 const PIPE_WIDTH = 64;
 const HIGH_SCORE_KEY = 'flappy-high-score';
 
+// --- Localization (simple demo) ---
+const locale = navigator.language.startsWith('es') ? 'es' : 'en';
+const TEXT = {
+  en: {
+    title: 'Flappy Bird',
+    tapToStart: 'Tap to Start',
+    tapToRestart: 'Tap to Restart',
+    gameOver: 'Game Over',
+    newHighScore: 'New High Score!',
+    score: 'Score',
+    highScore: 'High Score',
+    hint: 'Tap or press Space to flap',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    music: 'Music',
+    sfx: 'SFX',
+  },
+  es: {
+    title: 'Pájaro Saltarín',
+    tapToStart: 'Toca para empezar',
+    tapToRestart: 'Toca para reiniciar',
+    gameOver: 'Fin del juego',
+    newHighScore: '¡Nuevo récord!',
+    score: 'Puntaje',
+    highScore: 'Récord',
+    hint: 'Toca o pulsa Espacio para saltar',
+    mute: 'Silenciar',
+    unmute: 'Sonar',
+    music: 'Música',
+    sfx: 'Efectos',
+  },
+}[locale];
+
 function getHighScore(): number {
   return Number(localStorage.getItem(HIGH_SCORE_KEY)) || 0;
 }
@@ -26,13 +59,34 @@ function setHighScore(score: number) {
 export function createGameScene(app: Application, sceneManager?: SceneManager): GameScene {
   const sceneContainer = new Container();
 
+  // --- Parallax background ---
+  const bgContainer = new Container();
+  sceneContainer.addChild(bgContainer);
+  const bgFar = new Graphics();
+  bgFar.beginFill(0x87ceeb);
+  bgFar.drawRect(0, 0, app.screen.width, app.screen.height);
+  bgFar.endFill();
+  bgContainer.addChild(bgFar);
+  const bgClouds = new Graphics();
+  bgClouds.beginFill(0xffffff, 0.3);
+  bgClouds.drawEllipse(100, 80, 60, 24);
+  bgClouds.drawEllipse(300, 120, 80, 32);
+  bgClouds.drawEllipse(600, 60, 50, 20);
+  bgClouds.endFill();
+  bgContainer.addChild(bgClouds);
+  const ground = new Graphics();
+  ground.beginFill(0x4ec04e);
+  ground.drawRect(0, app.screen.height - 40, app.screen.width, 40);
+  ground.endFill();
+  sceneContainer.addChild(ground);
+
   // Title text (placeholder)
   const titleStyle = new TextStyle({
     fontFamily: 'Arial',
     fontSize: 48,
     fill: 0xffffff,
   });
-  const title = new Text('Flappy Bird', titleStyle);
+  const title = new Text(TEXT.title, titleStyle);
   // Center using pivot
   title.pivot.set(title.width / 2, title.height / 2);
   title.x = app.screen.width / 2;
@@ -72,7 +126,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
     fill: 0xff4444,
     stroke: { color: 0x000000, width: 8 },
   });
-  const gameOverText = new Text('Game Over', gameOverStyle);
+  const gameOverText = new Text(TEXT.gameOver, gameOverStyle);
   gameOverText.anchor.set(0.5);
   gameOverText.x = app.screen.width / 2;
   gameOverText.y = app.screen.height / 2;
@@ -86,7 +140,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
     fill: 0x00ff99,
     stroke: { color: 0x000000, width: 6 },
   });
-  const newHighScoreText = new Text('New High Score!', newHighScoreStyle);
+  const newHighScoreText = new Text(TEXT.newHighScore, newHighScoreStyle);
   newHighScoreText.anchor.set(0.5);
   newHighScoreText.x = app.screen.width / 2;
   newHighScoreText.y = gameOverText.y + 60;
@@ -100,7 +154,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
     fill: 0xffffff,
     stroke: { color: 0x000000, width: 4 },
   });
-  const hintText = new Text('Tap or press Space to flap', hintStyle);
+  const hintText = new Text(TEXT.hint, hintStyle);
   hintText.anchor.set(0.5, 0);
   hintText.x = app.screen.width / 2;
   hintText.y = app.screen.height - 48;
@@ -139,8 +193,70 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
   let isFadingOut = false;
   let fadeOutCallback: (() => void) | null = null;
 
+  // --- Settings button (mute/music/sfx) ---
+  const settingsStyle = new TextStyle({
+    fontFamily: 'Arial', fontSize: 20, fill: 0xffffff, stroke: { color: 0x000000, width: 4 },
+  });
+  const settingsText = new Text('⚙️', settingsStyle);
+  settingsText.anchor.set(1, 0);
+  settingsText.x = app.screen.width - 12;
+  settingsText.y = 12;
+  settingsText.interactive = true;
+  settingsText.cursor = 'pointer';
+  sceneContainer.addChild(settingsText);
+  let isMuted = false;
+  let isMusicOn = true;
+  let isSfxOn = true;
+  // --- Simple background music (oscillator loop) ---
+  let musicOsc: OscillatorNode | null = null;
+  let musicGain: GainNode | null = null;
+  function startMusic() {
+    if (!isMusicOn || isMuted) return;
+    if (!musicOsc) {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      musicOsc = ctx.createOscillator();
+      musicGain = ctx.createGain();
+      musicOsc.type = 'triangle';
+      musicOsc.frequency.value = 220;
+      musicGain.gain.value = 0.08;
+      musicOsc.connect(musicGain).connect(ctx.destination);
+      musicOsc.start();
+    }
+  }
+  function stopMusic() {
+    if (musicOsc) {
+      musicOsc.stop();
+      musicOsc.disconnect();
+      musicOsc = null;
+    }
+    if (musicGain) {
+      musicGain.disconnect();
+      musicGain = null;
+    }
+  }
+  settingsText.on('pointerdown', () => {
+    isMuted = !isMuted;
+    if (isMuted) {
+      stopMusic();
+      settingsText.text = '🔇';
+    } else {
+      if (isMusicOn) startMusic();
+      settingsText.text = '⚙️';
+    }
+  });
+  // --- Accessibility: ARIA live region for score ---
+  let ariaLive = document.getElementById('aria-live');
+  if (!ariaLive) {
+    ariaLive = document.createElement('div');
+    ariaLive.id = 'aria-live';
+    ariaLive.setAttribute('aria-live', 'polite');
+    ariaLive.style.position = 'absolute';
+    ariaLive.style.left = '-9999px';
+    document.body.appendChild(ariaLive);
+  }
+
   function updateHighScoreDisplay() {
-    highScoreText.text = `High Score: ${highScore}`;
+    highScoreText.text = `${TEXT.highScore}: ${highScore}`;
   }
 
   function spawnPipe() {
@@ -169,6 +285,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
     gameOverText.visible = false;
     newHighScoreText.visible = false;
     isNewHighScore = false;
+    ariaLive!.textContent = `${TEXT.score}: ${score}`;
   }
 
   function onFlap() {
@@ -177,6 +294,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
       return;
     }
     bird.velocity = FLAP_STRENGTH;
+    updateBird(bird, true);
     playSound('flap');
     particles.emit(bird.sprite.x, bird.sprite.y, 0xffff00);
   }
@@ -225,6 +343,15 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
     newHighScoreText.y = gameOverText.y + 60;
     hintText.x = app.screen.width / 2;
     hintText.y = app.screen.height - 48;
+    settingsText.x = app.screen.width - 12;
+    settingsText.y = 12;
+    // Parallax/ground
+    bgFar.width = app.screen.width;
+    bgFar.height = app.screen.height;
+    ground.clear();
+    ground.beginFill(0x4ec04e);
+    ground.drawRect(0, app.screen.height - 40, app.screen.width, 40);
+    ground.endFill();
   }
 
   function fadeOutAndSwitch(next: () => void) {
@@ -264,6 +391,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
       fadeTime = 0;
       isFadingIn = true;
       fadeOverlay.visible = true;
+      startMusic();
     },
     update(_delta: number) {
       // Fade-in animation
@@ -348,6 +476,13 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
       }
       // Particle system update
       particles.update(_delta);
+      // Parallax background
+      bgClouds.x -= 0.2 * _delta;
+      if (bgClouds.x < -200) bgClouds.x = 0;
+      // Animate bird
+      updateBird(bird, false);
+      // Accessibility: update ARIA live region
+      ariaLive!.textContent = `${TEXT.score}: ${score}`;
     },
     destroy() {
       app.stage.removeChild(sceneContainer);
@@ -358,6 +493,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
       pipes = [];
       // Clean up overlay
       fadeOverlay.removeChildren();
+      stopMusic();
     },
   };
 } 
