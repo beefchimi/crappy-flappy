@@ -2,6 +2,7 @@ import { Application, Container, Text, TextStyle } from 'pixi.js';
 import { GameScene } from '../types/game-scene';
 import { createBird, Bird } from '../entities/bird-entity';
 import { createPipe, getRandomGapY, Pipe } from '../entities/pipe-entity';
+import { playSound } from '../assets/sounds';
 
 const GRAVITY = 0.7;
 const FLAP_STRENGTH = -10;
@@ -154,6 +155,7 @@ export function createGameScene(app: Application): GameScene {
       return;
     }
     bird.velocity = FLAP_STRENGTH;
+    playSound('flap');
   }
 
   function checkCollision(): boolean {
@@ -229,6 +231,7 @@ export function createGameScene(app: Application): GameScene {
           isNewHighScore = true;
           newHighScoreText.visible = true;
         }
+        playSound('hit');
         return;
       }
       // Prevent bird from going off the top
@@ -255,6 +258,7 @@ export function createGameScene(app: Application): GameScene {
             isNewHighScore = true;
             newHighScoreText.visible = true;
           }
+          playSound('score');
         }
       }
       // Remove off-screen pipes
@@ -276,6 +280,7 @@ export function createGameScene(app: Application): GameScene {
           isNewHighScore = true;
           newHighScoreText.visible = true;
         }
+        playSound('hit');
       }
     },
     destroy() {
