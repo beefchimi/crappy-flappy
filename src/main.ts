@@ -16,7 +16,7 @@ async function startGame() {
   const sceneManager = new SceneManager(app);
 
   function startGameplay() {
-    sceneManager.changeScene(createGameScene(app));
+    sceneManager.changeScene(createGameScene(app, sceneManager));
   }
 
   sceneManager.changeScene(createSplashScene(app, startGameplay));

@@ -4,6 +4,8 @@ import { createBird, Bird } from '../entities/bird-entity';
 import { createPipe, getRandomGapY, Pipe } from '../entities/pipe-entity';
 import { playSound } from '../assets/sounds';
 import { createParticleSystem } from '../entities/particle-system';
+import { createGameOverScene } from './game-over-scene';
+import { SceneManager } from '../systems/scene-manager';
 
 const GRAVITY = 0.7;
 const FLAP_STRENGTH = -10;
@@ -21,7 +23,7 @@ function setHighScore(score: number) {
   localStorage.setItem(HIGH_SCORE_KEY, String(score));
 }
 
-export function createGameScene(app: Application): GameScene {
+export function createGameScene(app: Application, sceneManager?: SceneManager): GameScene {
   const sceneContainer = new Container();
 
   // Title text (placeholder)
@@ -223,6 +225,17 @@ export function createGameScene(app: Application): GameScene {
     hintText.y = app.screen.height - 48;
   }
 
+  function goToGameOver() {
+    if (sceneManager) {
+      sceneManager.changeScene(createGameOverScene(app, score, highScore, () => {
+        sceneManager.changeScene(createGameScene(app, sceneManager));
+      }));
+    } else {
+      // fallback: just reset
+      resetGame();
+    }
+  }
+
   return {
     init() {
       app.stage.addChild(sceneContainer);
@@ -259,16 +272,9 @@ export function createGameScene(app: Application): GameScene {
         bird.sprite.y = app.screen.height - 24;
         bird.velocity = 0;
         isGameOver = true;
-        gameOverText.visible = true;
-        if (score > highScore) {
-          highScore = score;
-          setHighScore(highScore);
-          updateHighScoreDisplay();
-          isNewHighScore = true;
-          newHighScoreText.visible = true;
-        }
         playSound('hit');
         particles.emit(bird.sprite.x, bird.sprite.y, 0xff4444);
+        goToGameOver();
         return;
       }
       // Prevent bird from going off the top
@@ -310,16 +316,9 @@ export function createGameScene(app: Application): GameScene {
       // Collision
       if (checkCollision()) {
         isGameOver = true;
-        gameOverText.visible = true;
-        if (score > highScore) {
-          highScore = score;
-          setHighScore(highScore);
-          updateHighScoreDisplay();
-          isNewHighScore = true;
-          newHighScoreText.visible = true;
-        }
         playSound('hit');
         particles.emit(bird.sprite.x, bird.sprite.y, 0xff4444);
+        goToGameOver();
       }
       // Particle system update
       particles.update(_delta);
