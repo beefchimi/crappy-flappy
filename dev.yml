@@ -1,0 +1,4 @@
+name: flappy-bird
+up:
+  - node:
+      version: v22.15.0
