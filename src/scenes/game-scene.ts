@@ -26,6 +26,33 @@ export function createGameScene(app: Application): GameScene {
   title.y = app.screen.height / 3;
   sceneContainer.addChild(title);
 
+  // Score text
+  const scoreStyle = new TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 40,
+    fill: 0xffffff,
+    stroke: { color: 0x000000, width: 6 },
+  });
+  const scoreText = new Text('0', scoreStyle);
+  scoreText.anchor.set(0.5, 0);
+  scoreText.x = app.screen.width / 2;
+  scoreText.y = 24;
+  sceneContainer.addChild(scoreText);
+
+  // Game over text
+  const gameOverStyle = new TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 56,
+    fill: 0xff4444,
+    stroke: { color: 0x000000, width: 8 },
+  });
+  const gameOverText = new Text('Game Over', gameOverStyle);
+  gameOverText.anchor.set(0.5);
+  gameOverText.x = app.screen.width / 2;
+  gameOverText.y = app.screen.height / 2;
+  gameOverText.visible = false;
+  sceneContainer.addChild(gameOverText);
+
   // Bird entity
   const birdStartX = app.screen.width / 3;
   const birdStartY = app.screen.height / 2;
@@ -36,6 +63,7 @@ export function createGameScene(app: Application): GameScene {
   let pipes: Pipe[] = [];
   let frameCount = 0;
   let isGameOver = false;
+  let score = 0;
 
   function spawnPipe() {
     const gapY = getRandomGapY(app.screen.height, PIPE_GAP);
@@ -56,6 +84,9 @@ export function createGameScene(app: Application): GameScene {
     pipes = [];
     frameCount = 0;
     isGameOver = false;
+    score = 0;
+    scoreText.text = '0';
+    gameOverText.visible = false;
   }
 
   function onFlap() {
@@ -109,6 +140,8 @@ export function createGameScene(app: Application): GameScene {
         bird.sprite.y = app.screen.height - 24;
         bird.velocity = 0;
         isGameOver = true;
+        gameOverText.visible = true;
+        return;
       }
       // Prevent bird from going off the top
       if (bird.sprite.y < 24) {
@@ -122,6 +155,12 @@ export function createGameScene(app: Application): GameScene {
       }
       for (const pipe of pipes) {
         pipe.container.x -= PIPE_SPEED;
+        // Score: check if bird passed the pipe
+        if (!pipe.passed && pipe.container.x + pipe.width < bird.sprite.x) {
+          pipe.passed = true;
+          score++;
+          scoreText.text = String(score);
+        }
       }
       // Remove off-screen pipes
       pipes = pipes.filter(pipe => {
@@ -134,6 +173,7 @@ export function createGameScene(app: Application): GameScene {
       // Collision
       if (checkCollision()) {
         isGameOver = true;
+        gameOverText.visible = true;
       }
     },
     destroy() {
