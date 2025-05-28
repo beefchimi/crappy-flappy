@@ -17,8 +17,6 @@ export function createGameOverScene(
   });
   const overText = new Text('Game Over', overStyle);
   overText.anchor.set(0.5);
-  overText.x = app.screen.width / 2;
-  overText.y = app.screen.height / 3;
   sceneContainer.addChild(overText);
 
   const scoreStyle = new TextStyle({
@@ -29,8 +27,6 @@ export function createGameOverScene(
   });
   const scoreText = new Text(`Score: ${score}`, scoreStyle);
   scoreText.anchor.set(0.5);
-  scoreText.x = app.screen.width / 2;
-  scoreText.y = overText.y + 80;
   sceneContainer.addChild(scoreText);
 
   const highScoreStyle = new TextStyle({
@@ -41,8 +37,6 @@ export function createGameOverScene(
   });
   const highScoreText = new Text(`High Score: ${highScore}`, highScoreStyle);
   highScoreText.anchor.set(0.5);
-  highScoreText.x = app.screen.width / 2;
-  highScoreText.y = scoreText.y + 48;
   sceneContainer.addChild(highScoreText);
 
   const restartStyle = new TextStyle({
@@ -53,8 +47,6 @@ export function createGameOverScene(
   });
   const restartText = new Text('Tap to Restart', restartStyle);
   restartText.anchor.set(0.5);
-  restartText.x = app.screen.width / 2;
-  restartText.y = highScoreText.y + 70;
   sceneContainer.addChild(restartText);
 
   let fadeTime = 0;
@@ -64,15 +56,28 @@ export function createGameOverScene(
     onRestart();
   }
 
+  function handleResize() {
+    overText.x = app.screen.width / 2;
+    overText.y = app.screen.height / 3;
+    scoreText.x = app.screen.width / 2;
+    scoreText.y = overText.y + 80;
+    highScoreText.x = app.screen.width / 2;
+    highScoreText.y = scoreText.y + 48;
+    restartText.x = app.screen.width / 2;
+    restartText.y = highScoreText.y + 70;
+  }
+
   return {
     init() {
       app.stage.addChild(sceneContainer);
       app.view.addEventListener('pointerdown', handleRestart);
+      window.addEventListener('resize', handleResize);
       fadeTime = 0;
       overText.alpha = 0;
       scoreText.alpha = 0;
       highScoreText.alpha = 0;
       restartText.alpha = 0;
+      handleResize();
     },
     update(_delta: number) {
       if (fadeTime < FADE_DURATION) {
@@ -88,6 +93,7 @@ export function createGameOverScene(
       app.stage.removeChild(sceneContainer);
       sceneContainer.removeChildren();
       app.view.removeEventListener('pointerdown', handleRestart);
+      window.removeEventListener('resize', handleResize);
     },
   };
 } 

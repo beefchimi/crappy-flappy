@@ -12,8 +12,6 @@ export function createSplashScene(app: Application, onStart: () => void): GameSc
   });
   const title = new Text('Flappy Bird', titleStyle);
   title.anchor.set(0.5);
-  title.x = app.screen.width / 2;
-  title.y = app.screen.height / 3;
   sceneContainer.addChild(title);
 
   const startStyle = new TextStyle({
@@ -24,8 +22,6 @@ export function createSplashScene(app: Application, onStart: () => void): GameSc
   });
   const startText = new Text('Tap to Start', startStyle);
   startText.anchor.set(0.5);
-  startText.x = app.screen.width / 2;
-  startText.y = app.screen.height / 2 + 60;
   sceneContainer.addChild(startText);
 
   let fadeTime = 0;
@@ -35,13 +31,22 @@ export function createSplashScene(app: Application, onStart: () => void): GameSc
     onStart();
   }
 
+  function handleResize() {
+    title.x = app.screen.width / 2;
+    title.y = app.screen.height / 3;
+    startText.x = app.screen.width / 2;
+    startText.y = app.screen.height / 2 + 60;
+  }
+
   return {
     init() {
       app.stage.addChild(sceneContainer);
       app.view.addEventListener('pointerdown', handleStart);
+      window.addEventListener('resize', handleResize);
       fadeTime = 0;
       title.alpha = 0;
       startText.alpha = 0;
+      handleResize();
     },
     update(_delta: number) {
       if (fadeTime < FADE_DURATION) {
@@ -55,6 +60,7 @@ export function createSplashScene(app: Application, onStart: () => void): GameSc
       app.stage.removeChild(sceneContainer);
       sceneContainer.removeChildren();
       app.view.removeEventListener('pointerdown', handleStart);
+      window.removeEventListener('resize', handleResize);
     },
   };
 } 

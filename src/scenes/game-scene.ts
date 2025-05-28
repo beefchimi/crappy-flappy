@@ -136,6 +136,8 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
   let fadeTime = 0;
   const FADE_DURATION = 0.5 * 60; // 0.5s at 60fps
   let isFadingIn = true;
+  let isFadingOut = false;
+  let fadeOutCallback: (() => void) | null = null;
 
   function updateHighScoreDisplay() {
     highScoreText.text = `High Score: ${highScore}`;
@@ -225,13 +227,24 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
     hintText.y = app.screen.height - 48;
   }
 
+  function fadeOutAndSwitch(next: () => void) {
+    fadeRect.width = app.screen.width;
+    fadeRect.height = app.screen.height;
+    fadeRect.alpha = 0;
+    fadeOverlay.visible = true;
+    isFadingOut = true;
+    fadeOutCallback = next;
+    fadeTime = 0;
+  }
+
   function goToGameOver() {
     if (sceneManager) {
-      sceneManager.changeScene(createGameOverScene(app, score, highScore, () => {
-        sceneManager.changeScene(createGameScene(app, sceneManager));
-      }));
+      fadeOutAndSwitch(() => {
+        sceneManager.changeScene(createGameOverScene(app, score, highScore, () => {
+          sceneManager.changeScene(createGameScene(app, sceneManager));
+        }));
+      });
     } else {
-      // fallback: just reset
       resetGame();
     }
   }
@@ -262,6 +275,19 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
           isFadingIn = false;
           fadeOverlay.visible = false;
         }
+      }
+      // Fade-out animation
+      if (isFadingOut) {
+        fadeTime += _delta;
+        let t = Math.min(1, fadeTime / (0.4 * 60));
+        fadeRect.alpha = t;
+        if (t >= 1 && fadeOutCallback) {
+          isFadingOut = false;
+          fadeOverlay.visible = false;
+          fadeOutCallback();
+          fadeOutCallback = null;
+        }
+        return;
       }
       if (isGameOver || isFadingIn) return;
       // Gravity
