@@ -1,7 +1,8 @@
 import { Application, Container, Text, TextStyle } from 'pixi.js';
+import { GameScene } from '../types/game-scene';
 
-export function createGameScene(app: Application) {
-  const scene = new Container();
+export function createGameScene(app: Application): GameScene {
+  const sceneContainer = new Container();
 
   // Title text (placeholder)
   const titleStyle = new TextStyle({
@@ -14,7 +15,18 @@ export function createGameScene(app: Application) {
   title.pivot.set(title.width / 2, title.height / 2);
   title.x = app.screen.width / 2;
   title.y = app.screen.height / 3;
-  scene.addChild(title);
+  sceneContainer.addChild(title);
 
-  app.stage.addChild(scene);
+  return {
+    init() {
+      app.stage.addChild(sceneContainer);
+    },
+    update(_delta: number) {
+      // Game update logic will go here
+    },
+    destroy() {
+      app.stage.removeChild(sceneContainer);
+      sceneContainer.removeChildren();
+    },
+  };
 } 

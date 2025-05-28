@@ -1,5 +1,6 @@
 import { Application } from 'pixi.js';
 import { createGameScene } from './scenes/game-scene';
+import { SceneManager } from './systems/scene-manager';
 
 async function startGame() {
   const app = new Application({
@@ -11,7 +12,8 @@ async function startGame() {
 
   document.getElementById('game-container')?.appendChild(app.view as HTMLCanvasElement);
 
-  createGameScene(app);
+  const sceneManager = new SceneManager(app);
+  sceneManager.changeScene(createGameScene(app));
 
   window.addEventListener('resize', () => {
     app.renderer.resize(window.innerWidth, window.innerHeight);
