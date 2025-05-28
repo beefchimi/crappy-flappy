@@ -31,30 +31,30 @@ export function createGameOverScene(
   const sceneContainer = new Container();
 
   const overStyle = new TextStyle({
-    fontFamily: 'Arial',
+    fontFamily: '"Press Start 2P", Arial, sans-serif',
     fontSize: 56,
-    fill: 0xff4444,
-    stroke: { color: 0x000000, width: 8 },
+    fill: 0xffffff,
+    stroke: { color: 0x000000, width: 10 },
   });
   const overText = new Text(TEXT.gameOver, overStyle);
   overText.anchor.set(0.5);
   sceneContainer.addChild(overText);
 
   const scoreStyle = new TextStyle({
-    fontFamily: 'Arial',
+    fontFamily: '"Press Start 2P", Arial, sans-serif',
     fontSize: 36,
     fill: 0xffffff,
-    stroke: { color: 0x000000, width: 6 },
+    stroke: { color: 0x000000, width: 8 },
   });
   const scoreText = new Text(`${TEXT.score}: ${score}`, scoreStyle);
   scoreText.anchor.set(0.5);
   sceneContainer.addChild(scoreText);
 
   const highScoreStyle = new TextStyle({
-    fontFamily: 'Arial',
+    fontFamily: '"Press Start 2P", Arial, sans-serif',
     fontSize: 28,
     fill: 0xffe066,
-    stroke: { color: 0x000000, width: 4 },
+    stroke: { color: 0x000000, width: 6 },
   });
   const highScoreText = new Text(`${TEXT.highScore}: ${highScore}`, highScoreStyle);
   highScoreText.anchor.set(0.5);

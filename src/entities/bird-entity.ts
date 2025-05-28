@@ -9,8 +9,27 @@ export interface Bird {
 
 export function createBird(x: number, y: number): Bird {
   const sprite = new Graphics();
+  // Body
   sprite.beginFill(0xffff00);
   sprite.drawCircle(0, 0, 24);
+  sprite.endFill();
+  // Belly (white arc)
+  sprite.beginFill(0xffffff);
+  sprite.moveTo(0, 0);
+  sprite.arc(0, 6, 18, Math.PI * 0.15, Math.PI * 0.85);
+  sprite.lineTo(0, 0);
+  sprite.endFill();
+  // Beak (orange triangle)
+  sprite.beginFill(0xffa500);
+  sprite.drawPolygon([18, -2, 32, 2, 18, 6]);
+  sprite.endFill();
+  // Eye (black)
+  sprite.beginFill(0x000000);
+  sprite.drawCircle(10, -8, 3.5);
+  sprite.endFill();
+  // Wing (white oval)
+  sprite.beginFill(0xffffff);
+  sprite.drawEllipse(-8, 2, 8, 12);
   sprite.endFill();
   sprite.x = x;
   sprite.y = y;

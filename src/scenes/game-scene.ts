@@ -61,25 +61,40 @@ function setHighScore(score: number) {
 export function createGameScene(app: Application, sceneManager?: SceneManager): GameScene {
   const sceneContainer = new Container();
 
-  // --- Parallax background ---
+  // --- Official Flappy Bird style background ---
   const bgContainer = new Container();
   sceneContainer.addChild(bgContainer);
-  const bgFar = new Graphics();
-  bgFar.beginFill(0x87ceeb);
-  bgFar.drawRect(0, 0, app.screen.width, app.screen.height);
-  bgFar.endFill();
-  bgContainer.addChild(bgFar);
+  const bgSky = new Graphics();
+  bgSky.beginFill(0x70c5ce);
+  bgSky.drawRect(0, 0, app.screen.width, app.screen.height);
+  bgSky.endFill();
+  bgContainer.addChild(bgSky);
+  // Clouds (keep existing, but tweak for more puffy look)
   const bgClouds = new Graphics();
-  bgClouds.beginFill(0xffffff, 0.3);
-  bgClouds.drawEllipse(100, 80, 60, 24);
-  bgClouds.drawEllipse(300, 120, 80, 32);
-  bgClouds.drawEllipse(600, 60, 50, 20);
+  bgClouds.beginFill(0xffffff, 0.9);
+  bgClouds.drawEllipse(120, 80, 38, 18);
+  bgClouds.drawEllipse(320, 120, 48, 22);
+  bgClouds.drawEllipse(600, 60, 32, 14);
   bgClouds.endFill();
   bgContainer.addChild(bgClouds);
+  // --- Official Flappy Bird style ground ---
   const ground = new Graphics();
-  ground.beginFill(0x4ec04e);
-  ground.drawRect(0, app.screen.height - 40, app.screen.width, 40);
+  // Dirt base
+  const GROUND_HEIGHT = 112;
+  ground.beginFill(0xbca16b);
+  ground.drawRect(0, app.screen.height - GROUND_HEIGHT, app.screen.width, GROUND_HEIGHT);
   ground.endFill();
+  // Grass top
+  const GRASS_HEIGHT = 28;
+  ground.beginFill(0xded895);
+  ground.drawRect(0, app.screen.height - GROUND_HEIGHT, app.screen.width, GRASS_HEIGHT);
+  ground.endFill();
+  // Grass bumps
+  for (let x = 0; x < app.screen.width; x += 24) {
+    ground.beginFill(0x79c850);
+    ground.drawEllipse(x + 12, app.screen.height - GROUND_HEIGHT + 8, 12, 8);
+    ground.endFill();
+  }
   sceneContainer.addChild(ground);
 
   // Title text (placeholder)
@@ -95,12 +110,13 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
   title.y = app.screen.height / 3;
   sceneContainer.addChild(title);
 
-  // Score text
+  // Score text (official style)
   const scoreStyle = new TextStyle({
-    fontFamily: 'Arial',
-    fontSize: 40,
+    fontFamily: '"Press Start 2P", Arial, sans-serif',
+    fontSize: 48,
     fill: 0xffffff,
-    stroke: { color: 0x000000, width: 6 },
+    stroke: { color: 0x000000, width: 8 },
+    letterSpacing: 2,
   });
   const scoreText = new Text('0', scoreStyle);
   scoreText.anchor.set(0.5, 0);
@@ -395,12 +411,24 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
     settingsText.x = app.screen.width - 12;
     settingsText.y = 12;
     // Parallax/ground
-    bgFar.width = app.screen.width;
-    bgFar.height = app.screen.height;
+    bgSky.width = app.screen.width;
+    bgSky.height = app.screen.height;
+    bgClouds.width = app.screen.width;
     ground.clear();
-    ground.beginFill(0x4ec04e);
-    ground.drawRect(0, app.screen.height - 40, app.screen.width, 40);
+    // Dirt base
+    ground.beginFill(0xbca16b);
+    ground.drawRect(0, app.screen.height - GROUND_HEIGHT, app.screen.width, GROUND_HEIGHT);
     ground.endFill();
+    // Grass top
+    ground.beginFill(0xded895);
+    ground.drawRect(0, app.screen.height - GROUND_HEIGHT, app.screen.width, GRASS_HEIGHT);
+    ground.endFill();
+    // Grass bumps
+    for (let x = 0; x < app.screen.width; x += 24) {
+      ground.beginFill(0x79c850);
+      ground.drawEllipse(x + 12, app.screen.height - GROUND_HEIGHT + 8, 12, 8);
+      ground.endFill();
+    }
   }
 
   function fadeOutAndSwitch(next: () => void) {

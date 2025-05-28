@@ -41,20 +41,20 @@ export function createSplashScene(app: Application, onStart: () => void): GameSc
   sceneContainer.addChild(ground);
 
   const titleStyle = new TextStyle({
-    fontFamily: 'Arial',
+    fontFamily: '"Press Start 2P", Arial, sans-serif',
     fontSize: 64,
     fill: 0xffffff,
-    stroke: { color: 0x000000, width: 8 },
+    stroke: { color: 0x000000, width: 10 },
   });
   const title = new Text(TEXT.title, titleStyle);
   title.anchor.set(0.5);
   sceneContainer.addChild(title);
 
   const startStyle = new TextStyle({
-    fontFamily: 'Arial',
+    fontFamily: '"Press Start 2P", Arial, sans-serif',
     fontSize: 36,
-    fill: 0xffff00,
-    stroke: { color: 0x000000, width: 6 },
+    fill: 0xffffff,
+    stroke: { color: 0x000000, width: 8 },
   });
   const startText = new Text(TEXT.tapToStart, startStyle);
   startText.anchor.set(0.5);
