@@ -89,6 +89,19 @@ export function createGameScene(app: Application): GameScene {
   newHighScoreText.visible = false;
   sceneContainer.addChild(newHighScoreText);
 
+  // Mobile hint text
+  const hintStyle = new TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 20,
+    fill: 0xffffff,
+    stroke: { color: 0x000000, width: 4 },
+  });
+  const hintText = new Text('Tap or press Space to flap', hintStyle);
+  hintText.anchor.set(0.5, 0);
+  hintText.x = app.screen.width / 2;
+  hintText.y = app.screen.height - 48;
+  sceneContainer.addChild(hintText);
+
   // Bird entity
   const birdStartX = app.screen.width / 3;
   const birdStartY = app.screen.height / 2;
@@ -170,11 +183,33 @@ export function createGameScene(app: Application): GameScene {
     return false;
   }
 
+  function onFlapEvent(e: Event) {
+    if (e instanceof KeyboardEvent && e.code !== 'Space') return;
+    onFlap();
+  }
+
+  function handleResize() {
+    // Center UI elements responsively
+    title.x = app.screen.width / 2;
+    title.y = app.screen.height / 3;
+    scoreText.x = app.screen.width / 2;
+    highScoreText.x = app.screen.width / 2;
+    gameOverText.x = app.screen.width / 2;
+    gameOverText.y = app.screen.height / 2;
+    newHighScoreText.x = app.screen.width / 2;
+    newHighScoreText.y = gameOverText.y + 60;
+    hintText.x = app.screen.width / 2;
+    hintText.y = app.screen.height - 48;
+  }
+
   return {
     init() {
       app.stage.addChild(sceneContainer);
-      app.view.addEventListener('pointerdown', onFlap);
+      app.view.addEventListener('pointerdown', onFlapEvent);
+      window.addEventListener('keydown', onFlapEvent);
+      window.addEventListener('resize', handleResize);
       resetGame();
+      handleResize();
     },
     update(_delta: number) {
       if (isGameOver) return;
@@ -246,7 +281,9 @@ export function createGameScene(app: Application): GameScene {
     destroy() {
       app.stage.removeChild(sceneContainer);
       sceneContainer.removeChildren();
-      app.view.removeEventListener('pointerdown', onFlap);
+      app.view.removeEventListener('pointerdown', onFlapEvent);
+      window.removeEventListener('keydown', onFlapEvent);
+      window.removeEventListener('resize', handleResize);
       pipes = [];
     },
   };
