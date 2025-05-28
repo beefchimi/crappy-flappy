@@ -9,6 +9,15 @@ const PIPE_SPEED = 3;
 const PIPE_INTERVAL = 90; // frames
 const PIPE_GAP = 160;
 const PIPE_WIDTH = 64;
+const HIGH_SCORE_KEY = 'flappy-high-score';
+
+function getHighScore(): number {
+  return Number(localStorage.getItem(HIGH_SCORE_KEY)) || 0;
+}
+
+function setHighScore(score: number) {
+  localStorage.setItem(HIGH_SCORE_KEY, String(score));
+}
 
 export function createGameScene(app: Application): GameScene {
   const sceneContainer = new Container();
@@ -39,6 +48,19 @@ export function createGameScene(app: Application): GameScene {
   scoreText.y = 24;
   sceneContainer.addChild(scoreText);
 
+  // High score text
+  const highScoreStyle = new TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 24,
+    fill: 0xffe066,
+    stroke: { color: 0x000000, width: 4 },
+  });
+  const highScoreText = new Text('', highScoreStyle);
+  highScoreText.anchor.set(0.5, 0);
+  highScoreText.x = app.screen.width / 2;
+  highScoreText.y = 70;
+  sceneContainer.addChild(highScoreText);
+
   // Game over text
   const gameOverStyle = new TextStyle({
     fontFamily: 'Arial',
@@ -53,6 +75,20 @@ export function createGameScene(app: Application): GameScene {
   gameOverText.visible = false;
   sceneContainer.addChild(gameOverText);
 
+  // New high score text
+  const newHighScoreStyle = new TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 32,
+    fill: 0x00ff99,
+    stroke: { color: 0x000000, width: 6 },
+  });
+  const newHighScoreText = new Text('New High Score!', newHighScoreStyle);
+  newHighScoreText.anchor.set(0.5);
+  newHighScoreText.x = app.screen.width / 2;
+  newHighScoreText.y = gameOverText.y + 60;
+  newHighScoreText.visible = false;
+  sceneContainer.addChild(newHighScoreText);
+
   // Bird entity
   const birdStartX = app.screen.width / 3;
   const birdStartY = app.screen.height / 2;
@@ -64,6 +100,12 @@ export function createGameScene(app: Application): GameScene {
   let frameCount = 0;
   let isGameOver = false;
   let score = 0;
+  let highScore = getHighScore();
+  let isNewHighScore = false;
+
+  function updateHighScoreDisplay() {
+    highScoreText.text = `High Score: ${highScore}`;
+  }
 
   function spawnPipe() {
     const gapY = getRandomGapY(app.screen.height, PIPE_GAP);
@@ -86,7 +128,11 @@ export function createGameScene(app: Application): GameScene {
     isGameOver = false;
     score = 0;
     scoreText.text = '0';
+    highScore = getHighScore();
+    updateHighScoreDisplay();
     gameOverText.visible = false;
+    newHighScoreText.visible = false;
+    isNewHighScore = false;
   }
 
   function onFlap() {
@@ -141,6 +187,13 @@ export function createGameScene(app: Application): GameScene {
         bird.velocity = 0;
         isGameOver = true;
         gameOverText.visible = true;
+        if (score > highScore) {
+          highScore = score;
+          setHighScore(highScore);
+          updateHighScoreDisplay();
+          isNewHighScore = true;
+          newHighScoreText.visible = true;
+        }
         return;
       }
       // Prevent bird from going off the top
@@ -160,6 +213,13 @@ export function createGameScene(app: Application): GameScene {
           pipe.passed = true;
           score++;
           scoreText.text = String(score);
+          if (score > highScore) {
+            highScore = score;
+            setHighScore(highScore);
+            updateHighScoreDisplay();
+            isNewHighScore = true;
+            newHighScoreText.visible = true;
+          }
         }
       }
       // Remove off-screen pipes
@@ -174,6 +234,13 @@ export function createGameScene(app: Application): GameScene {
       if (checkCollision()) {
         isGameOver = true;
         gameOverText.visible = true;
+        if (score > highScore) {
+          highScore = score;
+          setHighScore(highScore);
+          updateHighScoreDisplay();
+          isNewHighScore = true;
+          newHighScoreText.visible = true;
+        }
       }
     },
     destroy() {
