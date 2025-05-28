@@ -28,6 +28,9 @@ export function createSplashScene(app: Application, onStart: () => void): GameSc
   startText.y = app.screen.height / 2 + 60;
   sceneContainer.addChild(startText);
 
+  let fadeTime = 0;
+  const FADE_DURATION = 0.7 * 60; // 0.7s at 60fps
+
   function handleStart() {
     onStart();
   }
@@ -36,8 +39,18 @@ export function createSplashScene(app: Application, onStart: () => void): GameSc
     init() {
       app.stage.addChild(sceneContainer);
       app.view.addEventListener('pointerdown', handleStart);
+      fadeTime = 0;
+      title.alpha = 0;
+      startText.alpha = 0;
     },
-    update(_delta: number) {},
+    update(_delta: number) {
+      if (fadeTime < FADE_DURATION) {
+        fadeTime += _delta;
+        const t = Math.min(1, fadeTime / FADE_DURATION);
+        title.alpha = t;
+        startText.alpha = t;
+      }
+    },
     destroy() {
       app.stage.removeChild(sceneContainer);
       sceneContainer.removeChildren();
