@@ -6,9 +6,11 @@ import { playSound } from '../assets/sounds';
 import { createParticleSystem } from '../entities/particle-system';
 import { createGameOverScene } from './game-over-scene';
 import { SceneManager } from '../systems/scene-manager';
+import { createSettingsMenu } from '../entities/settings-menu';
+import { getSettings, subscribeSettings } from '../systems/settings';
 
 const GRAVITY = 0.7;
-const FLAP_STRENGTH = -10;
+let FLAP_STRENGTH = -10;
 const PIPE_SPEED = 3;
 const PIPE_INTERVAL = 90; // frames
 const PIPE_GAP = 160;
@@ -204,9 +206,65 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
   settingsText.interactive = true;
   settingsText.cursor = 'pointer';
   sceneContainer.addChild(settingsText);
-  let isMuted = false;
-  let isMusicOn = true;
-  let isSfxOn = true;
+
+  let isSettingsOpen = false;
+  let settingsMenu: Container | null = null;
+
+  settingsText.on('pointerdown', () => {
+    if (isSettingsOpen) return;
+    isSettingsOpen = true;
+    settingsMenu = createSettingsMenu(app, () => {
+      isSettingsOpen = false;
+      if (settingsMenu) {
+        sceneContainer.removeChild(settingsMenu);
+        settingsMenu = null;
+      }
+      // Update audio and difficulty on close
+      updateAudioFromSettings();
+      updateDifficultyFromSettings();
+    });
+    sceneContainer.addChild(settingsMenu);
+  });
+
+  function updateAudioFromSettings() {
+    const s = getSettings();
+    isMuted = s.isMuted;
+    isMusicOn = s.isMusicOn;
+    isSfxOn = s.isSfxOn;
+    if (isMuted) stopMusic();
+    else if (isMusicOn) startMusic();
+  }
+
+  function updateDifficultyFromSettings() {
+    const s = getSettings();
+    switch (s.difficulty) {
+      case 'easy':
+        GRAVITY = 0.26;
+        PIPE_SPEED = 1.7;
+        PIPE_GAP = 260;
+        FLAP_STRENGTH = -5.2;
+        break;
+      case 'hard':
+        GRAVITY = 0.42;
+        PIPE_SPEED = 2.7;
+        PIPE_GAP = 150;
+        FLAP_STRENGTH = -6.7;
+        break;
+      default:
+        GRAVITY = 0.32;
+        PIPE_SPEED = 2.1;
+        PIPE_GAP = 200;
+        FLAP_STRENGTH = -5.9;
+    }
+  }
+
+  // Use settings for initial values
+  let { isMuted, isMusicOn, isSfxOn } = getSettings();
+  let GRAVITY = 0.7;
+  let PIPE_SPEED = 3;
+  let PIPE_GAP = 160;
+  updateDifficultyFromSettings();
+
   // --- Simple background music (oscillator loop) ---
   let musicOsc: OscillatorNode | null = null;
   let musicGain: GainNode | null = null;
@@ -234,16 +292,7 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
       musicGain = null;
     }
   }
-  settingsText.on('pointerdown', () => {
-    isMuted = !isMuted;
-    if (isMuted) {
-      stopMusic();
-      settingsText.text = '🔇';
-    } else {
-      if (isMusicOn) startMusic();
-      settingsText.text = '⚙️';
-    }
-  });
+
   // --- Accessibility: ARIA live region for score ---
   let ariaLive = document.getElementById('aria-live');
   if (!ariaLive) {
@@ -392,8 +441,15 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
       isFadingIn = true;
       fadeOverlay.visible = true;
       startMusic();
+      updateAudioFromSettings();
+      updateDifficultyFromSettings();
+      subscribeSettings(() => {
+        updateAudioFromSettings();
+        updateDifficultyFromSettings();
+      });
     },
     update(_delta: number) {
+      if (isSettingsOpen) return; // Pause gameplay while settings open
       // Fade-in animation
       if (isFadingIn) {
         fadeTime += _delta;
@@ -494,6 +550,10 @@ export function createGameScene(app: Application, sceneManager?: SceneManager): 
       // Clean up overlay
       fadeOverlay.removeChildren();
       stopMusic();
+      if (settingsMenu) {
+        sceneContainer.removeChild(settingsMenu);
+        settingsMenu = null;
+      }
     },
   };
 } 
