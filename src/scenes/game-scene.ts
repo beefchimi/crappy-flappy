@@ -3,6 +3,7 @@ import { GameScene } from '../types/game-scene';
 import { createBird, Bird } from '../entities/bird-entity';
 import { createPipe, getRandomGapY, Pipe } from '../entities/pipe-entity';
 import { playSound } from '../assets/sounds';
+import { createParticleSystem } from '../entities/particle-system';
 
 const GRAVITY = 0.7;
 const FLAP_STRENGTH = -10;
@@ -117,6 +118,10 @@ export function createGameScene(app: Application): GameScene {
   let highScore = getHighScore();
   let isNewHighScore = false;
 
+  // Particle system
+  const particles = createParticleSystem();
+  sceneContainer.addChild(particles.container);
+
   function updateHighScoreDisplay() {
     highScoreText.text = `High Score: ${highScore}`;
   }
@@ -156,6 +161,7 @@ export function createGameScene(app: Application): GameScene {
     }
     bird.velocity = FLAP_STRENGTH;
     playSound('flap');
+    particles.emit(bird.sprite.x, bird.sprite.y, 0xffff00);
   }
 
   function checkCollision(): boolean {
@@ -232,6 +238,7 @@ export function createGameScene(app: Application): GameScene {
           newHighScoreText.visible = true;
         }
         playSound('hit');
+        particles.emit(bird.sprite.x, bird.sprite.y, 0xff4444);
         return;
       }
       // Prevent bird from going off the top
@@ -259,6 +266,7 @@ export function createGameScene(app: Application): GameScene {
             newHighScoreText.visible = true;
           }
           playSound('score');
+          particles.emit(bird.sprite.x, bird.sprite.y, 0x4ec04e);
         }
       }
       // Remove off-screen pipes
@@ -281,7 +289,10 @@ export function createGameScene(app: Application): GameScene {
           newHighScoreText.visible = true;
         }
         playSound('hit');
+        particles.emit(bird.sprite.x, bird.sprite.y, 0xff4444);
       }
+      // Particle system update
+      particles.update(_delta);
     },
     destroy() {
       app.stage.removeChild(sceneContainer);
